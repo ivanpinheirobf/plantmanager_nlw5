@@ -5,17 +5,19 @@ import {
   StyleSheet,
   Image,
   FlatList,
+  Alert,
 } from 'react-native';
-import { formatDistance, isBefore } from 'date-fns';
+import { formatDistance } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { loadPlant, PlantProps } from '../libs/storage';
+import { loadPlant, PlantProps, removePlant } from '../libs/storage';
 
 import { Header } from '../components/Header';
+import { PlantCardSecondary } from '../components/PlantCardSecondary';
+import { Load } from '../components/Load';
 
 import waterDrop from '../assets/waterdrop.png';
 import colors from '../styles/colors';
 import fonts from '../styles/fonts';
-import { PlantCardSecondary } from '../components/PlantCardSecondary';
 
 export function MyPlants() {
   const [myPlants, setMyPlants] = useState<PlantProps[]>([]);
@@ -43,6 +45,31 @@ export function MyPlants() {
     loadStorageData();
   }, [])
 
+  function handleRemove(plant: PlantProps) {
+    Alert.alert('Remover', `Deseja remover a ${plant.name}?`, [
+      {
+        text: 'Não 🙏',
+        style: 'cancel'
+      },
+      {
+        text: 'Sim 😢',
+        onPress: async () => {
+          try {
+            await removePlant(plant.id)
+
+            setMyPlants(oldData =>
+              oldData.filter(item => item.id !== plant.id)
+            );
+          } catch (error) {
+            Alert.alert('Não foi possível remover! 😢');
+          }
+        }
+      },
+    ])
+  }
+
+  if (loading) return <Load />
+
   return (
     <View style={styles.container}>
       <Header />
@@ -66,10 +93,10 @@ export function MyPlants() {
           data={myPlants}
           keyExtractor={(item) => String(item.id)}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flex: 1 }}
-          renderItem={(item) => (
+          renderItem={({ item }) => (
             <PlantCardSecondary
               data={item}
+              handleRemove={() => handleRemove(item)}
             />
           )}
         />
@@ -90,6 +117,7 @@ const styles = StyleSheet.create({
   spotlight: {
     backgroundColor: colors.blue_light,
     paddingHorizontal: 20,
+    marginTop: 20,
     borderRadius: 20,
     height: 110,
     flexDirection: 'row',
